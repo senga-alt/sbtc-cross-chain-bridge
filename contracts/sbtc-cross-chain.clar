@@ -99,3 +99,23 @@
         false
     )
 )
+
+;; Private functions
+(define-private (validate-amount (amount uint))
+    (if (and 
+            (>= amount MIN-DEPOSIT)
+            (<= amount MAX-DEPOSIT)
+        )
+        (ok true)
+        ERR-INVALID-AMOUNT
+    )
+)
+
+(define-private (update-user-balance (user principal) (amount uint))
+    (let ((current-amount (get-user-bridged-amount user)))
+        (map-set bridged-amounts 
+            user 
+            (+ current-amount amount)
+        )
+    )
+)
