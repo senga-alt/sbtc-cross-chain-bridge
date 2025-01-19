@@ -38,3 +38,14 @@
 (define-constant ERR-INVALID-RECIPIENT (err u104))
 (define-constant ERR-ALREADY-PROCESSED (err u105))
 (define-constant ERR-INVALID-TOKEN (err u106))
+
+;; Constants
+(define-constant CONTRACT-OWNER tx-sender)
+(define-constant MIN-DEPOSIT u100) ;; Minimum deposit amount in sats
+(define-constant MAX-DEPOSIT u100000000) ;; Maximum deposit amount in sats
+
+;; Data Variables
+(define-data-var contract-paused bool false)
+(define-data-var total-bridged-amount uint u0)
+(define-data-var bridge-fee-percentage uint u1) ;; 0.1% default fee
+(define-data-var token-contract principal 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.sbtc-token)
