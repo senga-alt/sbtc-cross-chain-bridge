@@ -78,3 +78,24 @@
 (define-read-only (get-token-contract)
     (var-get token-contract)
 )
+
+(define-read-only (is-contract-paused)
+    (var-get contract-paused)
+)
+
+(define-read-only (calculate-fee (amount uint))
+    (/ (* amount (var-get bridge-fee-percentage)) u1000)
+)
+
+(define-read-only (is-withdrawal-processed (tx-hash (buff 32)))
+    (match (map-get? pending-withdrawals 
+        {
+            tx-hash: tx-hash,
+            recipient: contract-caller,
+            amount: u0,
+            timestamp: u0
+        })
+        processed processed
+        false
+    )
+)
