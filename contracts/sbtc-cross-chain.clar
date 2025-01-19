@@ -119,3 +119,89 @@
         )
     )
 )
+
+;; Public functions
+(define-public (deposit (token <ft-trait>) (amount uint) (recipient principal))
+    (begin
+        (asserts! (not (var-get contract-paused)) ERR-BRIDGE-PAUSED)
+        (asserts! (is-eq (contract-of token) (var-get token-contract)) ERR-INVALID-TOKEN)
+        (try! (validate-amount amount))
+        
+        ;; Transfer sBTC from user to contract
+        (try! (contract-call? token transfer 
+            amount 
+            tx-sender 
+            (as-contract tx-sender)
+            none  ;; No memo needed
+        ))
+        
+        ;; Update state
+        (update-user-balance recipient amount)
+        (var-set total-bridged-amount (+ (var-get total-bridged-amount) amount))
+        
+        ;; Emit bridge deposit event
+        (print {
+            event: "bridge-deposit",
+            amount: amount,
+            sender: tx-sender,
+            recipient: recipient,
+            timestamp: block-height
+        })
+        
+        (ok true)
+    )
+)
+
+(define-public (withdraw (token <ft-trait>) (tx-hash (buff 32)) (amount uint))
+    (begin
+        (asserts! (not (var-get contract-paused)) ERR-BRIDGE-PAUSED)
+        (asserts! (is-eq (contract-of token) (var-get token-contract)) ERR-INVALID-TOKEN)
+        (asserts! (not (is-withdrawal-processed tx-hash)) ERR-ALREADY-PROCESSED)
+        (try! (validate-amount amount))
+        
+        (let (
+            (fee (calculate-fee amount))
+            (net-amount (- amount fee))
+        )
+            ;; Check if user has sufficient balance
+            (asserts! (>= (get-user-bridged-amount tx-sender) amount) ERR-INSUFFICIENT-BALANCE)
+            
+            ;; Transfer sBTC from contract to user
+            (try! (as-contract (contract-call? token transfer
+                net-amount
+                tx-sender
+                tx-sender
+                none  ;; No memo needed
+            )))
+            
+            ;; Update state
+            (map-set pending-withdrawals 
+                {
+                    tx-hash: tx-hash,
+                    recipient: tx-sender,
+                    amount: amount,
+                    timestamp: block-height
+                }
+                true
+            )
+            
+            ;; Update user balance
+            (map-set bridged-amounts 
+                tx-sender 
+                (- (get-user-bridged-amount tx-sender) amount)
+            )
+            
+            ;; Emit withdrawal event
+            (print {
+                event: "bridge-withdrawal",
+                tx-hash: tx-hash,
+                amount: amount,
+                fee: fee,
+                recipient: tx-sender,
+                timestamp: block-height
+            })
+            
+            (ok true)
+        )
+    )
+)
