@@ -49,3 +49,32 @@
 (define-data-var total-bridged-amount uint u0)
 (define-data-var bridge-fee-percentage uint u1) ;; 0.1% default fee
 (define-data-var token-contract principal 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.sbtc-token)
+
+;; Data Maps
+(define-map bridged-amounts principal uint)
+(define-map pending-withdrawals 
+    {
+        tx-hash: (buff 32),
+        recipient: principal,
+        amount: uint,
+        timestamp: uint
+    }
+    bool
+)
+
+;; Read-only functions
+(define-read-only (get-bridge-fee-percentage)
+    (var-get bridge-fee-percentage)
+)
+
+(define-read-only (get-user-bridged-amount (user principal))
+    (default-to u0 (map-get? bridged-amounts user))
+)
+
+(define-read-only (get-total-bridged-amount)
+    (var-get total-bridged-amount)
+)
+
+(define-read-only (get-token-contract)
+    (var-get token-contract)
+)
