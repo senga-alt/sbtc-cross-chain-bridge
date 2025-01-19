@@ -205,3 +205,42 @@
         )
     )
 )
+
+;; Admin functions
+(define-public (set-bridge-fee (new-fee uint))
+    (begin
+        (asserts! (is-eq tx-sender CONTRACT-OWNER) ERR-NOT-AUTHORIZED)
+        (var-set bridge-fee-percentage new-fee)
+        (ok true)
+    )
+)
+
+(define-public (set-token-contract (new-token-contract principal))
+    (begin
+        (asserts! (is-eq tx-sender CONTRACT-OWNER) ERR-NOT-AUTHORIZED)
+        (var-set token-contract new-token-contract)
+        (ok true)
+    )
+)
+
+(define-public (toggle-contract-pause)
+    (begin
+        (asserts! (is-eq tx-sender CONTRACT-OWNER) ERR-NOT-AUTHORIZED)
+        (var-set contract-paused (not (var-get contract-paused)))
+        (ok true)
+    )
+)
+
+(define-public (recover-funds (token <ft-trait>) (amount uint))
+    (begin
+        (asserts! (is-eq tx-sender CONTRACT-OWNER) ERR-NOT-AUTHORIZED)
+        (asserts! (is-eq (contract-of token) (var-get token-contract)) ERR-INVALID-TOKEN)
+        (try! (as-contract (contract-call? token transfer
+            amount
+            tx-sender
+            CONTRACT-OWNER
+            none  ;; No memo needed
+        )))
+        (ok true)
+    )
+)
